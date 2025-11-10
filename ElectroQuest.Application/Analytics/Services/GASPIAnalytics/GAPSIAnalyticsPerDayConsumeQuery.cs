@@ -1,9 +1,12 @@
 ﻿
 
+using AutoMapper;
 using ElectroQuest.Application.Analytics.DTO;
 using ElectroQuest.Application.Analytics.Interfaces.Adapters;
 using ElectroQuest.Application.Analytics.Services.Interfaces;
 using ElectroQuest.Domain.Entities;
+using Microsoft.Extensions.Logging;
+using System.Collections.Specialized;
 using System.Text.Json;
 
 namespace ElectroQuest.Application.Analytics.Services.GASPIAnalytics
@@ -15,13 +18,25 @@ namespace ElectroQuest.Application.Analytics.Services.GASPIAnalytics
     {
         // constructor ... //
         readonly IConsumeMessage _consumeMessage;
-        public GAPSIAnalyticsPerDayConsumerHandler(IConsumeMessage consumer)
+        readonly IGAPSIAnalyticsPerDayStoreService _storeHandler;
+        readonly IMapper _mapper;
+        readonly ILogger<GAPSIAnalyticsPerDayConsumerHandler> _logger;
+        public GAPSIAnalyticsPerDayConsumerHandler(
+            IConsumeMessage consumer , 
+            IGAPSIAnalyticsPerDayStoreService handler ,
+            IMapper mapper,
+            ILogger<GAPSIAnalyticsPerDayConsumerHandler> logger
+            )
         {
             _consumeMessage = consumer;
+            _storeHandler = handler;
+            _mapper = mapper;
+            _logger = logger;
         }
         public async Task HandleAsync()
         {
-            await _consumeMessage.ConsumeAsync((msg) =>
+            DateOnly DateRecived = default;
+            await _consumeMessage.ConsumeAsync(async (msg) =>
             {
                 if(string.IsNullOrEmpty(msg))
                 {
@@ -30,12 +45,19 @@ namespace ElectroQuest.Application.Analytics.Services.GASPIAnalytics
                 try
                 {
                     IList<GAPSICombinedDto> dtos = JsonSerializer.Deserialize<IList<GAPSICombinedDto>>(msg)!;
+                    var rowData = _mapper.Map<IList<RowData>>(dtos);
+                    rowData = rowData.Select(rd => { rd.RecievedAt = DateTime.Now; return rd; }).ToList();
                     DailyStats statsAggregated = AggregateStatsToDailyStats(dtos);
+                    DateRecived = statsAggregated.Date;
+                    _logger.LogInformation($"Messages For Date {DateRecived} Consumed From Queue .");
+                    await _storeHandler.HandelAsync(new GAPSIAnalyticsPerDayStoreCommand(rowData , statsAggregated));
                 }
                 catch (Exception ex) 
                 {
-                    throw;
+                    Console.WriteLine(ex.Message);
+                    return false;
                 }
+                _logger.LogInformation($"Messages For Date {DateRecived} Pushed To DB");
                 return true;
             });
         }
@@ -56,7 +78,10 @@ namespace ElectroQuest.Application.Analytics.Services.GASPIAnalytics
                 TotalUsers = stats.Sum(st => st.Users),
                 AvgPerformance = stats.Average(st => st.PerformanceScore)
             };
+            aggregate.Date = stats.First().Date;
+            aggregate.LastUpdatedAt = DateTime.Now;
             return aggregate;
         }
+
     }
 }

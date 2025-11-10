@@ -1,5 +1,6 @@
 ﻿using ElectroQuest.Application.Analytics.Interfaces.Adapters;
 using ElectroQuest.Infrastructure.Analytics.Settings;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using System.ComponentModel.Design;
@@ -17,18 +18,21 @@ namespace ElectroQuest.Infrastructure.Analytics.Adapters
         // configured in <ref="ElectroQuest.Infrastructure\InfrastructureDependencies.cs">
 
         readonly RabbitMQSettings _rabbitmqSettings;
+        readonly ILogger<RabbitPublisher> _logger;
         static IConnection _connection; // singletone : created once and re-used for multiple channels
-        public RabbitPublisher(IOptions<RabbitMQSettings> settings)
+
+        public RabbitPublisher(IOptions<RabbitMQSettings> settings , ILogger<RabbitPublisher> logger)
         {
             _rabbitmqSettings = settings.Value;
+            _logger = logger;
         }
-        public async Task PublishAsync<T>(T message)
+        public async Task PublishAsync<T>(T message, DateOnly date)
         {
             using IChannel channel = await GetChannel();
             await ChannelSetup(channel);
             string body = JsonSerializer.Serialize(message); 
             await channel.BasicPublishAsync(_rabbitmqSettings.ExchangeName, _rabbitmqSettings.RoutingKey, Encoding.UTF8.GetBytes(body));
-            //Console.WriteLine($"publish for Channel {x}");
+            _logger.LogInformation($"Messages For Date {date} Pushed To Queue .");
         }
         // connectoin created only once 
         // and the following calls will reuse this it .
@@ -50,7 +54,7 @@ namespace ElectroQuest.Infrastructure.Analytics.Adapters
                 ConnectionFactory factory = new ConnectionFactory();
                 factory.Uri = new Uri(_rabbitmqSettings.ConnectionUri);
                 _connection = factory.CreateConnectionAsync().GetAwaiter().GetResult();
-                Console.WriteLine($"connection constructed");
+                //Console.WriteLine($"connection constructed");
             }
             
             return _connection;

@@ -21,7 +21,7 @@ namespace ElectroQuest.Domain.Entities
         [Required(ErrorMessage = "PerformanceScore Cannot Be Empty !")]
         public float PerformanceScore { get; set; }
         [Required(ErrorMessage = "Largest Contentful Paint Cannot Be Empty !")]
-        public int LCP { get; set; }
+        public int LCP_ms { get; set; }
         [Required(ErrorMessage = "RecievedAt Cannot Be Empty !")]
         public DateTime RecievedAt {  get; set; }
 

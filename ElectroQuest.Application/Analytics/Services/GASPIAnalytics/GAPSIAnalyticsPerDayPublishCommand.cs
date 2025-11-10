@@ -26,16 +26,14 @@ namespace ElectroQuest.Application.Analytics.Services.GASPIAnalytics
             foreach(var day in command.days)
             {
                 /* TODO : validate the GAPSICombinedDto with your custom Validator before publishing */
-
                 IList<GAPSICombinedDto> pagesPerDay = day.Value /* The Inner Dictionary holding the page -> GAPSICombinedDot */
                     .Select(kv => kv.Value /* Selecting GAPSICombinedDto */
                     ).ToList();
-                Console.WriteLine($"{pagesPerDay.Count} , {pagesPerDay[0].Views}");
+                //Console.WriteLine($"{pagesPerDay.Count} , {pagesPerDay[0].Views}");
                 // publish to the queue 
-                tasks.Add(_publisher.PublishAsync(pagesPerDay).ContinueWith(_ => Console.WriteLine($"Date : {day.Key} Published")));
+                tasks.Add(_publisher.PublishAsync(pagesPerDay, pagesPerDay.Select(x => x.Date).First())); /*.ContinueWith(_ => Console.WriteLine($"Date : {day.Key} Published"))*/
             }
             await Task.WhenAll(tasks);
-            //await _publisher.CompletePublishNotify();
         }
     }
 

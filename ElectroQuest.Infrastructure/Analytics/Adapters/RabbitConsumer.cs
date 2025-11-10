@@ -15,7 +15,7 @@ namespace ElectroQuest.Infrastructure.Analytics.Adapters
         {
             _rabbitmqSettings = settings.Value;
         }
-        public async Task ConsumeAsync(Func<string, bool> onRecieve)
+        public async Task ConsumeAsync(Func<string, Task<bool>> onRecieve)
         {
 
             IConnection connection = GetConnection();
@@ -25,7 +25,6 @@ namespace ElectroQuest.Infrastructure.Analytics.Adapters
             var consumer = new AsyncEventingBasicConsumer(channel);
             consumer.ReceivedAsync += async (sender, args) =>
             {
-                Console.WriteLine("Enter Recived Task");
                 string content = Encoding.UTF8.GetString(args.Body.ToArray());
                 //if(content == "END")
                 //{
@@ -35,7 +34,7 @@ namespace ElectroQuest.Infrastructure.Analytics.Adapters
                 //}
                 for (int i = 0; i<3; i++)
                 {
-                    if(onRecieve(content))
+                    if(await onRecieve(content))
                     {
                         await channel.BasicAckAsync(args.DeliveryTag, false);
                         break;
@@ -51,7 +50,7 @@ namespace ElectroQuest.Infrastructure.Analytics.Adapters
                 ConnectionFactory factory = new ConnectionFactory();
                 factory.Uri = new Uri(_rabbitmqSettings.ConnectionUri);
                 _connection = factory.CreateConnectionAsync().GetAwaiter().GetResult();
-                Console.WriteLine($"connection constructed");
+                //Console.WriteLine($"connection constructed");
             }
 
             return _connection;

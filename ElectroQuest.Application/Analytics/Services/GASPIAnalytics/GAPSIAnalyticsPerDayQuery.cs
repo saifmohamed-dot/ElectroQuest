@@ -19,7 +19,7 @@ namespace ElectroQuest.Application.Analytics.Services.GASPIAnalytics
     {
         // DI Constructor Injection handling ....
         readonly IReadLocal _ReadLocal;
-        readonly Dictionary<DateOnly, Dictionary<string, GAPSICombinedDto>> _PagesStatsGroupedByDate;
+        Dictionary<DateOnly, Dictionary<string, GAPSICombinedDto>> _PagesStatsGroupedByDate;
         public GAPSIQueryHandler(IReadLocal readLocal)
         {
             _ReadLocal = readLocal;
@@ -29,7 +29,8 @@ namespace ElectroQuest.Application.Analytics.Services.GASPIAnalytics
         // so for every date (key) we will publish the page dictionary (value) as list 
         // like : 1/10/2020 => (/home(inner key) , DailyStats) , (/contacts , DailyStats) , ....
         public async Task<Dictionary<DateOnly , Dictionary<string , GAPSICombinedDto>>> HandleAsync(GAPSIQuery query)
-        {    
+        {
+            _PagesStatsGroupedByDate = new();
             try
             {
                 string gaExtension = Path.GetExtension(query.gALocation);

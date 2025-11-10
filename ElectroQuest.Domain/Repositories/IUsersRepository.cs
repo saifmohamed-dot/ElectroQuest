@@ -4,8 +4,10 @@ namespace ElectroQuest.Domain.Repositories
 {
     public interface IUsersRepository
     {
-        Task<User> GetUserById(int id);
-        Task<User> GetUserByEmailAndPassword(string email, string password);
-        Task<int> CreateUser(User user);
+        Task<User> GetUserByIdAsync(int id);
+        Task<User> GetUserByEmailAndPasswordAsync(string email, string passwordHash);
+        Task<User> GetUserByEmail(string email);
+        Task<int> CreateUserAsync(User user);
+        Task SaveChangesAsync();
     }
 }
