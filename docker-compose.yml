@@ -1,6 +1,5 @@
-# servecies 
 services:
-  # Api setup stage
+  # API Service
   myapi:
     build: .
     ports:
@@ -11,21 +10,25 @@ services:
       - sqlserver
       - rabbitmq
     environment:
-      - ConnectionStrings:DefaultConnection=server=sqlserver;Database=ElectroDB;User Id=sa;Password=@abc123@;Trust Server Certificate=true
-      - DBSettings:DefaultConnection=server=sqlserver;Database=ElectroDB;User Id=sa;Password=@abc123@;Trust Server Certificate=true
-      - RabbitMQ:ConnectionUri=amqp://guest:guest@rabbitmq:5672
-  # DataBase Setup Stage (Api Depends On it)
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=ElectroDB;User Id=sa;Password=@abc123@;TrustServerCertificate=True;
+      - DBSettings__DefaultConnection=Server=sqlserver,1433;Database=ElectroDB;User Id=sa;Password=@abc123@;TrustServerCertificate=True;
+      - RabbitMQ__ConnectionUri=amqp://guest:guest@rabbitmq:5672
+
+  # SQL Server Database
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
+    hostname: sqlserver
     networks:
       - net1
-    hostname: sqlserver
+    ports:
+      - "1433:1433"
     volumes:
-      - sqldata:/var/opt/mssql # to presiste the data generating from the container
+      - sqldata:/var/opt/mssql
     environment:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=@abc123@
-  # RabbitMQ 
+
+  # RabbitMQ
   rabbitmq:
     image: rabbitmq:3-management
     container_name: myrabbitmq
@@ -34,8 +37,11 @@ services:
       - "5672:5672"
     networks:
       - net1
-  # networks 
+
+# Networks
 networks:
-  net1: # Volums
+  net1:
+
+# Volumes
 volumes:
   sqldata:
